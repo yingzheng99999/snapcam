@@ -39,7 +39,7 @@ import com.snapcam.domain.model.MediaItem
 fun GalleryScreen(
     onBack: () -> Unit,
     onItemClick: (MediaItem) -> Unit,
-    viewModel: GalleryViewModel = hiltViewModel()
+    viewModel: GalleryViewModel
 ) {
     val state by viewModel.state.collectAsState()
 

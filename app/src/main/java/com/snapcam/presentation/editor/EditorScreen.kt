@@ -47,16 +47,24 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.snapcam.domain.repository.MediaRepository
 
 @Composable
 fun EditorScreen(
     mediaUri: String,
     onBack: () -> Unit,
-    viewModel: EditorViewModel = hiltViewModel()
+    mediaRepository: MediaRepository? = null
 ) {
-    val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val viewModel: EditorViewModel = viewModel(
+        factory = EditorViewModel.Factory(
+            mediaRepository ?: error("mediaRepository required"),
+            context.contentResolver
+        )
+    )
+    val state by viewModel.state.collectAsState()
 
     LaunchedEffect(mediaUri) {
         viewModel.loadImage(Uri.parse(mediaUri))

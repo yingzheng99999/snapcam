@@ -62,7 +62,7 @@ import com.snapcam.domain.model.Filter
 @Composable
 fun CameraScreen(
     onNavigateToGallery: () -> Unit,
-    viewModel: CameraViewModel = hiltViewModel()
+    viewModel: CameraViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)

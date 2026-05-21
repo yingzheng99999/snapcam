@@ -7,11 +7,7 @@ import com.snapcam.domain.model.MediaItem
 import com.snapcam.domain.model.MediaType
 import com.snapcam.domain.repository.MediaRepository
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
-
-@Singleton
-class MediaRepositoryImpl @Inject constructor(
+class MediaRepositoryImpl(
     private val mediaDao: MediaDao,
     private val contentResolver: ContentResolver
 ) : MediaRepository {

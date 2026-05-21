@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
 import com.snapcam.data.camera.CameraManager
 import com.snapcam.data.local.MediaDatabase
 import com.snapcam.data.repository.MediaRepositoryImpl
@@ -25,7 +26,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applicationContext.let { ctx ->
-            database = MediaDatabase.create(ctx)
+            database = Room.databaseBuilder(ctx, MediaDatabase::class.java, "snapcam_db").build()
             cameraManager = CameraManager(ctx)
             mediaRepository = MediaRepositoryImpl(database.mediaDao(), ctx.contentResolver)
         }

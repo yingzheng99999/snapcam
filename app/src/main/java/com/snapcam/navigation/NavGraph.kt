@@ -50,7 +50,8 @@ fun NavGraph(
             val mediaUri = backStackEntry.arguments?.getString("mediaUri") ?: return@composable
             EditorScreen(
                 mediaUri = mediaUri,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                mediaRepository = mediaRepository
             )
         }
     }
