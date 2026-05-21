@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.snapcam.data.camera.CameraManager
 import com.snapcam.data.camera.CaptureResult
-import com.snapcam.data.camera.VideoState
 import com.snapcam.domain.model.CameraMode
 import com.snapcam.domain.model.Filter
 import com.snapcam.domain.model.MediaItem
