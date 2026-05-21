@@ -75,7 +75,7 @@ fun GalleryScreen(
             ) {
                 items(state.items, key = { it.id }) { item ->
                     AsyncImage(
-                        model = item.uri,
+                        model = item.uri,  // Coil accepts String URIs
                         contentDescription = null,
                         modifier = Modifier
                             .aspectRatio(1f)

@@ -1,10 +1,12 @@
 package com.snapcam.domain.model
 
-import android.net.Uri
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
+@Entity(tableName = "media_items")
 data class MediaItem(
-    val id: String = java.util.UUID.randomUUID().toString(),
-    val uri: Uri,
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val uri: String,
     val type: MediaType,
     val width: Int,
     val height: Int,

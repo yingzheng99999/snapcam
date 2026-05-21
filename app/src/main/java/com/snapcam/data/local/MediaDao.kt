@@ -14,7 +14,7 @@ interface MediaDao {
     fun getAllFlow(): Flow<List<MediaItem>>
 
     @Query("SELECT * FROM media_items WHERE type = :type ORDER BY createdAt DESC")
-    fun getByTypeFlow(type: MediaType): Flow<List<MediaItem>>
+    suspend fun getByType(type: MediaType): List<MediaItem>
 
     @Query("SELECT * FROM media_items ORDER BY createdAt DESC")
     suspend fun getAll(): List<MediaItem>

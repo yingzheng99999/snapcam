@@ -77,7 +77,7 @@ class CameraViewModel @Inject constructor(
             when (result) {
                 is CaptureResult.PhotoSaved -> {
                     val item = MediaItem(
-                        uri = Uri.fromFile(result.file),
+                        uri = Uri.fromFile(result.file).toString(),
                         type = MediaType.PHOTO,
                         width = 0, height = 0,
                         fileSize = result.file.length(),
@@ -85,7 +85,7 @@ class CameraViewModel @Inject constructor(
                     )
                     viewModelScope.launch {
                         mediaRepository.save(item)
-                        _uiState.value = _uiState.value.copy(latestUri = item.uri)
+                        _uiState.value = _uiState.value.copy(latestUri = Uri.parse(item.uri))
                     }
                 }
                 is CaptureResult.Error -> {
@@ -106,7 +106,7 @@ class CameraViewModel @Inject constructor(
                     is androidx.camera.video.VideoRecordEvent.Finalize -> {
                         event.outputResults.outputUri?.let { uri ->
                             val item = MediaItem(
-                                uri = uri, type = MediaType.VIDEO,
+                                uri = uri.toString(), type = MediaType.VIDEO,
                                 width = 0, height = 0, fileSize = 0,
                                 durationMs = event.recordingDuration
                             )
