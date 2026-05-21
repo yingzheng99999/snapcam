@@ -1,9 +1,7 @@
 package com.snapcam.data.camera
 
-import android.content.ContentValues
 import android.content.Context
 import android.os.Environment
-import android.provider.MediaStore
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -11,32 +9,20 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.FallbackStrategy
-import androidx.camera.video.FileDescriptorOutputOptions
-import androidx.camera.video.Quality
-import androidx.camera.video.QualitySelector
-import androidx.camera.video.Recorder
-import androidx.camera.video.VideoCapture
-import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.snapcam.domain.model.CameraMode
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 
 sealed class CaptureResult {
     data class PhotoSaved(val file: File) : CaptureResult()
-    data class VideoSaved(val file: File) : CaptureResult()
     data class Error(val message: String, val exception: Throwable? = null) : CaptureResult()
 }
-
-enum class VideoState { IDLE, RECORDING, STOPPED }
 
 @Singleton
 class CameraManager @Inject constructor(
@@ -45,24 +31,19 @@ class CameraManager @Inject constructor(
     private var cameraProvider: ProcessCameraProvider? = null
     private var preview: Preview? = null
     private var imageCapture: ImageCapture? = null
-    private var videoCapture: VideoCapture<Recorder>? = null
     private var camera: Camera? = null
     private var activeLens = CameraSelector.LENS_FACING_BACK
-    private val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    var videoState: VideoState = VideoState.IDLE
-        private set
-
-    private val fileDateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
+    private val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
 
     fun startCamera(
         lifecycleOwner: LifecycleOwner,
         previewView: PreviewView,
-        mode: CameraMode = CameraMode.PHOTO,
         lensFacing: Int = activeLens
     ) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
+        val future = ProcessCameraProvider.getInstance(context)
+        future.addListener({
+            cameraProvider = future.get()
             cameraProvider?.unbindAll()
 
             preview = Preview.Builder()
@@ -75,98 +56,39 @@ class CameraManager @Inject constructor(
                 .setTargetRotation(previewView.display?.rotation ?: 0)
                 .build()
 
-            val recorder = Recorder.Builder()
-                .setQualitySelector(
-                    QualitySelector.from(Quality.FHD,
-                        FallbackStrategy.lowerQualityOrHigherThan(Quality.SD))
-                ).build()
-
-            videoCapture = VideoCapture.Builder(recorder).build()
-
-            val cameraSelector = CameraSelector.Builder()
-                .requireLensFacing(lensFacing)
-                .build()
-
-            val useCases = mutableListOf<Any>(preview!!, imageCapture!!)
-            if (mode == CameraMode.VIDEO) useCases.add(videoCapture!!)
+            val selector = CameraSelector.Builder()
+                .requireLensFacing(lensFacing).build()
 
             try {
                 camera = cameraProvider?.bindToLifecycle(
-                    lifecycleOwner, cameraSelector, *useCases.toTypedArray()
+                    lifecycleOwner, selector, preview!!, imageCapture!!
                 )
                 activeLens = lensFacing
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            } catch (_: Exception) {}
         }, ContextCompat.getMainExecutor(context))
     }
 
     fun capturePhoto(onResult: (CaptureResult) -> Unit) {
-        val capture = imageCapture ?: run {
-            onResult(CaptureResult.Error("Camera not initialized"))
-            return
-        }
-        val photoFile = createFile("IMG_", ".jpg", Environment.DIRECTORY_PICTURES)
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
+        val capture = imageCapture ?: run { onResult(CaptureResult.Error("Not ready")); return }
+        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+            "IMG_${dateFormat.format(System.currentTimeMillis())}.jpg")
         capture.takePicture(
-            outputOptions,
+            ImageCapture.OutputFileOptions.Builder(file).build(),
             cameraExecutor,
             object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    onResult(CaptureResult.PhotoSaved(photoFile))
-                }
-                override fun onError(e: ImageCaptureException) {
-                    onResult(CaptureResult.Error("Capture failed: ${e.message}", e))
-                }
+                override fun onImageSaved(o: ImageCapture.OutputFileResults) { onResult(CaptureResult.PhotoSaved(file)) }
+                override fun onError(e: ImageCaptureException) { onResult(CaptureResult.Error(e.message, e)) }
             }
         )
     }
 
-    fun startVideoRecording(onEvent: (VideoRecordEvent) -> Unit) {
-        val capture = videoCapture ?: run { return }
-        val videoFile = createFile("VID_", ".mp4", Environment.DIRECTORY_MOVIES)
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Video.Media.DISPLAY_NAME, videoFile.name)
-            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-            put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES)
-        }
-        val uri = context.contentResolver.insert(
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues
-        ) ?: return
-        val outputOptions = FileDescriptorOutputOptions.Builder(
-            context.contentResolver.openFileDescriptor(uri, "w")!!
-        ).build()
-
-        capture.startRecording(outputOptions, cameraExecutor) { event ->
-            when (event) {
-                is VideoRecordEvent.Start -> { videoState = VideoState.RECORDING }
-                is VideoRecordEvent.Finalize -> { videoState = VideoState.IDLE }
-                else -> {}
-            }
-            onEvent(event)
-        }
-    }
-
-    fun stopVideoRecording() {
-        videoCapture?.stopRecording()
-        videoState = VideoState.STOPPED
-    }
-
-    fun switchLens(lifecycleOwner: LifecycleOwner, previewView: PreviewView, mode: CameraMode) {
+    fun switchLens(lifecycleOwner: LifecycleOwner, previewView: PreviewView) {
         val newLens = if (activeLens == CameraSelector.LENS_FACING_BACK)
             CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
-        startCamera(lifecycleOwner, previewView, mode, newLens)
-    }
-
-    private fun createFile(prefix: String, suffix: String, dir: String): File {
-        val timestamp = fileDateFormat.format(System.currentTimeMillis())
-        val directory = context.getExternalFilesDir(dir)
-        return File(directory, "${prefix}${timestamp}$suffix")
+        startCamera(lifecycleOwner, previewView, newLens)
     }
 
     fun release() {
-        cameraProvider?.unbindAll()
-        cameraExecutor.shutdown()
+        cameraProvider?.unbindAll(); cameraExecutor.shutdown()
     }
 }

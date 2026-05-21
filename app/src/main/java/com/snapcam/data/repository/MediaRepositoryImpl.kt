@@ -1,6 +1,6 @@
 package com.snapcam.data.repository
 
-import android.content.Context
+import android.content.ContentResolver
 import android.net.Uri
 import com.snapcam.data.local.MediaDao
 import com.snapcam.domain.model.MediaItem
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class MediaRepositoryImpl @Inject constructor(
     private val mediaDao: MediaDao,
-    private val context: Context
+    private val contentResolver: ContentResolver
 ) : MediaRepository {
 
     override suspend fun save(media: MediaItem) = mediaDao.insert(media)
@@ -21,14 +21,14 @@ class MediaRepositoryImpl @Inject constructor(
     override suspend fun delete(id: String) {
         val item = mediaDao.getById(id)
         if (item != null) {
-            context.contentResolver.delete(item.uri, null, null)
+            contentResolver.delete(Uri.parse(item.uri), null, null)
             mediaDao.deleteById(id)
         }
     }
 
     override suspend fun getAll(): List<MediaItem> = mediaDao.getAll()
 
-    override suspend fun getByType(type: MediaType): List<MediaItem> = mediaDao.getByTypeFlow(type).let { emptyList() }
+    override suspend fun getByType(type: MediaType): List<MediaItem> = mediaDao.getByType(type)
 
     override suspend fun getById(id: String): MediaItem? = mediaDao.getById(id)
 

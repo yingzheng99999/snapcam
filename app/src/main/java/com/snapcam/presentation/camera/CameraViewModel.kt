@@ -96,30 +96,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun toggleVideo() {
-        if (_uiState.value.isRecording) {
-            cameraManager.stopVideoRecording()
-            _uiState.value = _uiState.value.copy(isRecording = false)
-        } else {
-            cameraManager.startVideoRecording { event ->
-                when (event) {
-                    is androidx.camera.video.VideoRecordEvent.Finalize -> {
-                        event.outputResults.outputUri?.let { uri ->
-                            val item = MediaItem(
-                                uri = uri.toString(), type = MediaType.VIDEO,
-                                width = 0, height = 0, fileSize = 0,
-                                durationMs = event.recordingDuration
-                            )
-                            viewModelScope.launch {
-                                mediaRepository.save(item)
-                                _uiState.value = _uiState.value.copy(latestUri = uri)
-                            }
-                        }
-                    }
-                    else -> {}
-                }
-            }
-            _uiState.value = _uiState.value.copy(isRecording = true)
-        }
+        // Video recording will be implemented in V2
     }
 
     fun clearError() {
