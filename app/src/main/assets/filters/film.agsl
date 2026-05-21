@@ -1,0 +1,12 @@
+// film.agsl
+vec3 main(vec4 color) {
+    vec3 c = color.rgb;
+    c = pow(c, vec3(1.0/2.2));
+    c.r *= 1.1;
+    c.g *= 0.95;
+    c.b *= 0.85;
+    float grain = (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.03;
+    c += grain;
+    c = pow(c, vec3(2.2));
+    return clamp(c, 0.0, 1.0);
+}

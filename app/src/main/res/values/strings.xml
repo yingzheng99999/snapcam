@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SnapCam</string>
+    <color name="snap_blue">#2563EB</color>
+    <color name="snap_dark">#0F1B2D</color>
+</resources>

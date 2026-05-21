@@ -1,0 +1,8 @@
+// cool.agsl
+vec3 main(vec4 color) {
+    vec3 c = color.rgb;
+    c.r = c.r * 0.85;
+    c.g = c.g * 0.95;
+    c.b = c.b * 1.15 + 0.02;
+    return clamp(c, 0.0, 1.0);
+}

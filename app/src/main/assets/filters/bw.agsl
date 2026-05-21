@@ -1,0 +1,6 @@
+// bw.agsl
+vec3 main(vec4 color) {
+    float gray = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+    gray = smoothstep(0.2, 0.8, gray);
+    return vec3(gray);
+}
