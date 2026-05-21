@@ -77,7 +77,7 @@ class CameraManager @Inject constructor(
             cameraExecutor,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(o: ImageCapture.OutputFileResults) { onResult(CaptureResult.PhotoSaved(file)) }
-                override fun onError(e: ImageCaptureException) { onResult(CaptureResult.Error(e.message, e)) }
+                override fun onError(e: ImageCaptureException) { onResult(CaptureResult.Error(e.message ?: "Capture failed", e)) }
             }
         )
     }
