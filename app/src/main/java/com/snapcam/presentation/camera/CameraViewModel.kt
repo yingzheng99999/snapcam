@@ -2,6 +2,7 @@ package com.snapcam.presentation.camera
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.snapcam.data.camera.CameraManager
 import com.snapcam.data.camera.CaptureResult
@@ -10,12 +11,10 @@ import com.snapcam.domain.model.Filter
 import com.snapcam.domain.model.MediaItem
 import com.snapcam.domain.model.MediaType
 import com.snapcam.domain.repository.MediaRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class CameraUiState(
     val mode: CameraMode = CameraMode.PHOTO,
@@ -29,11 +28,20 @@ data class CameraUiState(
     val error: String? = null
 )
 
-@HiltViewModel
-class CameraViewModel @Inject constructor(
+class CameraViewModel(
     private val cameraManager: CameraManager,
     private val mediaRepository: MediaRepository
 ) : ViewModel() {
+
+    class Factory(
+        private val cameraManager: CameraManager,
+        private val mediaRepository: MediaRepository
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return CameraViewModel(cameraManager, mediaRepository) as T
+        }
+    }
 
     private val _uiState = MutableStateFlow(CameraUiState())
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()

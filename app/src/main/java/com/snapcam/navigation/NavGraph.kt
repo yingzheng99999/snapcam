@@ -7,9 +7,13 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.snapcam.data.camera.CameraManager
+import com.snapcam.domain.repository.MediaRepository
 import com.snapcam.presentation.camera.CameraScreen
 import com.snapcam.presentation.editor.EditorScreen
 import com.snapcam.presentation.gallery.GalleryScreen
+import com.snapcam.app.cameraViewModel
+import com.snapcam.app.galleryViewModel
 
 object Routes {
     const val CAMERA = "camera"
@@ -18,19 +22,25 @@ object Routes {
 }
 
 @Composable
-fun NavGraph(navController: NavHostController) {
+fun NavGraph(
+    navController: NavHostController,
+    cameraManager: CameraManager,
+    mediaRepository: MediaRepository
+) {
     NavHost(navController = navController, startDestination = Routes.CAMERA) {
         composable(Routes.CAMERA) {
             CameraScreen(
-                onNavigateToGallery = { navController.navigate(Routes.GALLERY) }
+                onNavigateToGallery = { navController.navigate(Routes.GALLERY) },
+                viewModel = cameraViewModel(cameraManager, mediaRepository)
             )
         }
         composable(Routes.GALLERY) {
             GalleryScreen(
                 onBack = { navController.popBackStack() },
                 onItemClick = { item ->
-                    navController.navigate("editor/${Uri.encode(item.uri.toString())}")
-                }
+                    navController.navigate("editor/${Uri.encode(item.uri)}")
+                },
+                viewModel = galleryViewModel(mediaRepository)
             )
         }
         composable(

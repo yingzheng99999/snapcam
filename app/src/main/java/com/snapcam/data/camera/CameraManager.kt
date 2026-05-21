@@ -16,16 +16,12 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.Executors
-import javax.inject.Inject
-import javax.inject.Singleton
-
 sealed class CaptureResult {
     data class PhotoSaved(val file: File) : CaptureResult()
     data class Error(val message: String, val exception: Throwable? = null) : CaptureResult()
 }
 
-@Singleton
-class CameraManager @Inject constructor(
+class CameraManager(
     private val context: Context
 ) {
     private var cameraProvider: ProcessCameraProvider? = null

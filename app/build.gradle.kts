@@ -2,8 +2,6 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.dagger.hilt.android")
-    id("com.google.devtools.ksp")
 }
 
 android {
@@ -71,15 +69,11 @@ dependencies {
     implementation("androidx.camera:camera-video:$cameraxVersion")
 
     // ── Hilt ──
-    implementation("com.google.dagger:hilt-android:2.50")
-    ksp("com.google.dagger:hilt-compiler:2.50")
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     // ── Room ──
     val roomVersion = "2.6.1"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
 
     // ── Image Loading ──
     implementation("io.coil-kt:coil-compose:2.5.0")

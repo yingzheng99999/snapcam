@@ -13,7 +13,6 @@ import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.snapcam.domain.repository.MediaRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import javax.inject.Inject
+import androidx.lifecycle.ViewModelProvider
 
 data class EditorUiState(
     val bitmap: Bitmap? = null,
@@ -36,11 +35,20 @@ data class EditorUiState(
     val error: String? = null
 )
 
-@HiltViewModel
-class EditorViewModel @Inject constructor(
+class EditorViewModel(
     private val mediaRepository: MediaRepository,
     private val contentResolver: ContentResolver
 ) : ViewModel() {
+
+    class Factory(
+        private val mediaRepository: MediaRepository,
+        private val contentResolver: ContentResolver
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return EditorViewModel(mediaRepository, contentResolver) as T
+        }
+    }
 
     private val _state = MutableStateFlow(EditorUiState())
     val state: StateFlow<EditorUiState> = _state.asStateFlow()
