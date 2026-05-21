@@ -66,7 +66,7 @@ fun EditorScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0F1B2D))
-            .navigationBarsPadding()
+            .padding(bottom = 8.dp)
     ) {
         // Top bar
         Row(

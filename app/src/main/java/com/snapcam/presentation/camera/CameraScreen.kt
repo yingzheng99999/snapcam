@@ -161,8 +161,8 @@ fun CameraBottomBar(
     viewModel: CameraViewModel,
     onNavigateToGallery: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(bottom = 32.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -235,7 +235,6 @@ fun ZoomSlider(state: CameraUiState, viewModel: CameraViewModel) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .align(Alignment.Center)
             .padding(horizontal = 48.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
