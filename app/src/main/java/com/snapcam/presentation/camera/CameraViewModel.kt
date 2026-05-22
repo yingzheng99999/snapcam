@@ -149,8 +149,7 @@ class CameraViewModel(
                         val item = MediaItem(
                             uri = result.uri.toString(),
                             type = MediaType.VIDEO,
-                            width = 0, height = 0, fileSize = 0,
-                            durationMs = result.durationMs
+                            width = 0, height = 0, fileSize = 0
                         )
                         viewModelScope.launch {
                             mediaRepository.save(item)
