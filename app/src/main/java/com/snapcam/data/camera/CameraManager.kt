@@ -1,7 +1,10 @@
 package com.snapcam.data.camera
 
+package com.snapcam.data.camera
+
 import android.content.ContentValues
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.camera.core.AspectRatio
@@ -10,6 +13,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.SurfaceRequest
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.FileDescriptorOutputOptions
@@ -44,9 +48,10 @@ class CameraManager(
     private var activeLens = CameraSelector.LENS_FACING_BACK
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-    private var _isRecording = false
-    val isRecording: Boolean get() = _isRecording
+    var isRecording: Boolean = false
+        private set
     private var currentVideoCallback: ((CaptureResult) -> Unit)? = null
+    private var videoUri: android.net.Uri? = null
 
     fun startCamera(
         lifecycleOwner: LifecycleOwner,
@@ -73,14 +78,15 @@ class CameraManager(
                 .setQualitySelector(QualitySelector.from(
                     Quality.FHD, FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)))
                 .build()
-            videoCapture = VideoCapture.Builder(recorder).build()
+            videoCapture = VideoCapture.Builder<Recorder>()
+                .setRecorder(recorder)
+                .build()
 
             val selector = CameraSelector.Builder()
                 .requireLensFacing(lensFacing).build()
 
             try {
-                val useCases = mutableListOf<Any>(preview!!, imageCapture!!)
-                if (mode == CameraMode.VIDEO) useCases.add(videoCapture!!)
+                val useCases = mutableListOf<Any>(preview!!, imageCapture!!, videoCapture!!)
                 camera = cameraProvider?.bindToLifecycle(
                     lifecycleOwner, selector, *useCases.toTypedArray()
                 )
@@ -108,48 +114,51 @@ class CameraManager(
     }
 
     fun startVideoRecording(onResult: (CaptureResult) -> Unit) {
-        val capture = videoCapture ?: run { onResult(CaptureResult.Error("Video not ready")); return }
         val timestamp = dateFormat.format(System.currentTimeMillis())
-        val contentValues = ContentValues().apply {
+        val values = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, "VID_$timestamp.mp4")
             put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-            put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES)
+            }
         }
         val uri = context.contentResolver.insert(
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values
         ) ?: run { onResult(CaptureResult.Error("Failed to create video file")); return }
 
-        val fdOptions = FileDescriptorOutputOptions.Builder(
-            context.contentResolver.openFileDescriptor(uri, "w")!!
-        ).build()
+        try {
+            val fd = context.contentResolver.openFileDescriptor(uri, "w")
+                ?: run { onResult(CaptureResult.Error("Cannot open fd")); return }
+            val options = FileDescriptorOutputOptions.Builder(fd).build()
+            currentVideoCallback = onResult
+            videoUri = uri
+            isRecording = true
 
-        currentVideoCallback = onResult
-        _isRecording = true
-
-        capture.startRecording(fdOptions, cameraExecutor) { event ->
-            when (event) {
-                is VideoRecordEvent.Start -> { /* recording started */ }
-                is VideoRecordEvent.Finalize -> {
-                    _isRecording = false
-                    if (event.hasError()) {
-                        currentVideoCallback?.invoke(
-                            CaptureResult.Error("Recording failed: ${event.cause}")
-                        )
-                    } else {
-                        currentVideoCallback?.invoke(
-                            CaptureResult.VideoSaved(uri, event.recordingDuration)
-                        )
+            videoCapture?.startRecording(
+                options,
+                cameraExecutor,
+                object : VideoRecordEvent.Callback {
+                    override fun onEvent(event: VideoRecordEvent) {
+                        if (event is VideoRecordEvent.Finalize) {
+                            isRecording = false
+                            if (event.hasError()) {
+                                onResult(CaptureResult.Error("Recording error: ${event.cause}"))
+                            } else {
+                                onResult(CaptureResult.VideoSaved(uri, event.recordingDuration))
+                            }
+                        }
                     }
-                    currentVideoCallback = null
                 }
-                else -> {}
-            }
+            )
+        } catch (e: Exception) {
+            isRecording = false
+            onResult(CaptureResult.Error("Cannot start recording: ${e.message}"))
         }
     }
 
     fun stopVideoRecording() {
         videoCapture?.stopRecording()
-        _isRecording = false
+        isRecording = false
     }
 
     fun switchLens(lifecycleOwner: LifecycleOwner, previewView: PreviewView, mode: CameraMode) {
