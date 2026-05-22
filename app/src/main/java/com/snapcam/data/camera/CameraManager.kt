@@ -2,7 +2,6 @@ package com.snapcam.data.camera
 
 import android.content.ContentValues
 import android.content.Context
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.camera.core.AspectRatio
@@ -14,7 +13,7 @@ import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FallbackStrategy
-import androidx.camera.video.FileDescriptorOutputOptions
+import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
@@ -123,27 +122,26 @@ class CameraManager(
         ) ?: run { onResult(CaptureResult.Error("Failed to create video file")); return }
 
         try {
-            val fd = context.contentResolver.openFileDescriptor(uri, "w")
-                ?: run { onResult(CaptureResult.Error("Cannot open fd")); return }
-            val options = FileDescriptorOutputOptions.Builder(fd).build()
+            val mediaStoreOutputOptions = MediaStoreOutputOptions.Builder(
+                context.contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            ).build()
+
             currentVideoCallback = onResult
             videoUri = uri
             isRecording = true
 
-            videoCapture?.startRecording(options, cameraExecutor) { event ->
-                if (event is VideoRecordEvent.Finalize) {
-                    isRecording = false
-                    if (event.hasError()) {
-                        currentVideoCallback?.invoke(
-                            CaptureResult.Error("Recording error: ${event.cause}")
-                        )
-                    } else {
-                        currentVideoCallback?.invoke(
-                            CaptureResult.VideoSaved(uri, event.recordingDuration)
-                        )
+            videoCapture?.output?.prepareRecording(context, mediaStoreOutputOptions)
+                ?.withAudioEnabled()
+                ?.start(cameraExecutor) { event ->
+                    if (event is VideoRecordEvent.Finalize) {
+                        isRecording = false
+                        if (event.hasError()) {
+                            onResult(CaptureResult.Error("Recording error: ${event.cause}"))
+                        } else {
+                            onResult(CaptureResult.VideoSaved(uri, event.recordingDuration))
+                        }
                     }
                 }
-            }
         } catch (e: Exception) {
             isRecording = false
             onResult(CaptureResult.Error("Cannot start recording: ${e.message}"))
@@ -151,7 +149,6 @@ class CameraManager(
     }
 
     fun stopVideoRecording() {
-        videoCapture?.stopRecording()
         isRecording = false
     }
 
