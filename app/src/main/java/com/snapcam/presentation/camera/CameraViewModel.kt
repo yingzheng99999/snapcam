@@ -46,6 +46,13 @@ class CameraViewModel(
     private val _uiState = MutableStateFlow(CameraUiState())
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
 
+    fun startCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: androidx.camera.view.PreviewView) {
+        cameraManager.startCamera(
+            lifecycleOwner, previewView,
+            _uiState.value.mode, _uiState.value.lensFacing
+        )
+    }
+
     fun setMode(mode: CameraMode) {
         _uiState.value = _uiState.value.copy(mode = mode)
     }
@@ -104,7 +111,36 @@ class CameraViewModel(
     }
 
     fun toggleVideo() {
-        // Video recording will be implemented in V2
+        if (cameraManager.isRecording) {
+            cameraManager.stopVideoRecording()
+            _uiState.value = _uiState.value.copy(isRecording = false)
+        } else {
+            cameraManager.startVideoRecording { result ->
+                when (result) {
+                    is CaptureResult.VideoSaved -> {
+                        val item = MediaItem(
+                            uri = result.uri.toString(),
+                            type = MediaType.VIDEO,
+                            width = 0, height = 0, fileSize = 0,
+                            durationMs = result.durationMs
+                        )
+                        viewModelScope.launch {
+                            mediaRepository.save(item)
+                            _uiState.value = _uiState.value.copy(
+                                isRecording = false, latestUri = result.uri
+                            )
+                        }
+                    }
+                    is CaptureResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isRecording = false, error = result.message
+                        )
+                    }
+                    else -> {}
+                }
+            }
+            _uiState.value = _uiState.value.copy(isRecording = true)
+        }
     }
 
     fun clearError() {

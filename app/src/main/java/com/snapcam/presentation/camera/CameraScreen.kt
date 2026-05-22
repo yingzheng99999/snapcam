@@ -57,6 +57,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.snapcam.domain.model.CameraMode
 import com.snapcam.domain.model.Filter
+import com.snapcam.data.camera.CameraManager
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -114,18 +115,14 @@ fun CameraPreview(modifier: Modifier, viewModel: CameraViewModel) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        // Camera will be initialized via lifecycle in CameraPreview
+    LaunchedEffect(lifecycleOwner, state.mode, state.lensFacing) {
+        viewModel.startCamera(lifecycleOwner, previewView)
     }
 
     AndroidView(
         factory = { previewView },
         modifier = modifier
     )
-
-    LaunchedEffect(lifecycleOwner) {
-        viewModel.setMode(CameraMode.PHOTO)
-    }
 }
 
 @Composable
