@@ -25,6 +25,9 @@ data class CameraUiState(
     val lensFacing: Int = 0,
     val latestUri: Uri? = null,
     val showFilterCarousel: Boolean = false,
+    val showGrid: Boolean = false,
+    val timerSeconds: Int = 0,
+    val countdownRemaining: Int = 0,
     val error: String? = null
 )
 
@@ -78,6 +81,31 @@ class CameraViewModel(
         _uiState.value = _uiState.value.copy(
             showFilterCarousel = !_uiState.value.showFilterCarousel
         )
+    }
+
+    fun toggleGrid() {
+        _uiState.value = _uiState.value.copy(showGrid = !_uiState.value.showGrid)
+    }
+
+    fun setTimer(seconds: Int) {
+        _uiState.value = _uiState.value.copy(timerSeconds = seconds)
+    }
+
+    fun startCountdown() {
+        val seconds = _uiState.value.timerSeconds
+        if (seconds <= 0) {
+            capturePhoto()
+            return
+        }
+        _uiState.value = _uiState.value.copy(countdownRemaining = seconds)
+        viewModelScope.launch {
+            for (i in seconds downTo 1) {
+                _uiState.value = _uiState.value.copy(countdownRemaining = i)
+                kotlinx.coroutines.delay(1000)
+            }
+            _uiState.value = _uiState.value.copy(countdownRemaining = 0)
+            capturePhoto()
+        }
     }
 
     fun switchLens() {

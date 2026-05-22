@@ -84,6 +84,12 @@ fun CameraScreen(
         Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0F1B2D))) {
             CameraPreview(modifier = Modifier.fillMaxSize(), viewModel = viewModel)
             CameraTopBar(state, viewModel)
+            if (state.showGrid) {
+                GridOverlay(modifier = Modifier.fillMaxSize())
+            }
+            if (state.countdownRemaining > 0) {
+                CountdownOverlay(seconds = state.countdownRemaining)
+            }
             CameraBottomBar(state, viewModel, onNavigateToGallery)
             ZoomSlider(state, viewModel)
 
@@ -282,5 +288,38 @@ fun PermissionGate(text: String, onRequest: () -> Unit) {
             Spacer(Modifier.height(24.dp))
             Button(onClick = onRequest) { Text("授予权限") }
         }
+    }
+}
+
+@Composable
+fun GridOverlay(modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val paint = android.graphics.Paint().apply {
+            color = android.graphics.Color.argb(80, 255, 255, 255)
+            strokeWidth = 1f
+        }
+        // Vertical lines (rule of thirds)
+        drawLine(Color.White.copy(alpha = 0.3f), androidx.compose.ui.geometry.Offset(w / 3, 0f), androidx.compose.ui.geometry.Offset(w / 3, h))
+        drawLine(Color.White.copy(alpha = 0.3f), androidx.compose.ui.geometry.Offset(2 * w / 3, 0f), androidx.compose.ui.geometry.Offset(2 * w / 3, h))
+        // Horizontal lines
+        drawLine(Color.White.copy(alpha = 0.3f), androidx.compose.ui.geometry.Offset(0f, h / 3), androidx.compose.ui.geometry.Offset(w, h / 3))
+        drawLine(Color.White.copy(alpha = 0.3f), androidx.compose.ui.geometry.Offset(0f, 2 * h / 3), androidx.compose.ui.geometry.Offset(w, 2 * h / 3))
+        // Center cross
+        drawLine(Color.White.copy(alpha = 0.15f), androidx.compose.ui.geometry.Offset(w / 2, 0f), androidx.compose.ui.geometry.Offset(w / 2, h))
+        drawLine(Color.White.copy(alpha = 0.15f), androidx.compose.ui.geometry.Offset(0f, h / 2), androidx.compose.ui.geometry.Offset(w, h / 2))
+    }
+}
+
+@Composable
+fun CountdownOverlay(seconds: Int) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(
+            text = if (seconds > 0) "$seconds" else "",
+            color = Color.White,
+            fontSize = 96.sp,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+        )
     }
 }
