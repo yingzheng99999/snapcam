@@ -1,7 +1,5 @@
 package com.snapcam.data.camera
 
-package com.snapcam.data.camera
-
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
@@ -78,9 +76,7 @@ class CameraManager(
                 .setQualitySelector(QualitySelector.from(
                     Quality.FHD, FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)))
                 .build()
-            videoCapture = VideoCapture.Builder<Recorder>()
-                .setRecorder(recorder)
-                .build()
+            videoCapture = VideoCapture.Builder(recorder).build()
 
             val selector = CameraSelector.Builder()
                 .requireLensFacing(lensFacing).build()
@@ -134,22 +130,20 @@ class CameraManager(
             videoUri = uri
             isRecording = true
 
-            videoCapture?.startRecording(
-                options,
-                cameraExecutor,
-                object : VideoRecordEvent.Callback {
-                    override fun onEvent(event: VideoRecordEvent) {
-                        if (event is VideoRecordEvent.Finalize) {
-                            isRecording = false
-                            if (event.hasError()) {
-                                onResult(CaptureResult.Error("Recording error: ${event.cause}"))
-                            } else {
-                                onResult(CaptureResult.VideoSaved(uri, event.recordingDuration))
-                            }
-                        }
+            videoCapture?.startRecording(options, cameraExecutor) { event ->
+                if (event is VideoRecordEvent.Finalize) {
+                    isRecording = false
+                    if (event.hasError()) {
+                        currentVideoCallback?.invoke(
+                            CaptureResult.Error("Recording error: ${event.cause}")
+                        )
+                    } else {
+                        currentVideoCallback?.invoke(
+                            CaptureResult.VideoSaved(uri, event.recordingDuration)
+                        )
                     }
                 }
-            )
+            }
         } catch (e: Exception) {
             isRecording = false
             onResult(CaptureResult.Error("Cannot start recording: ${e.message}"))
