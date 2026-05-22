@@ -50,10 +50,7 @@ class CameraViewModel(
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
 
     fun startCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: androidx.camera.view.PreviewView) {
-        cameraManager.startCamera(
-            lifecycleOwner, previewView,
-            _uiState.value.mode, _uiState.value.lensFacing
-        )
+        cameraManager.startCamera(lifecycleOwner, previewView, _uiState.value.lensFacing)
     }
 
     fun setMode(mode: CameraMode) {

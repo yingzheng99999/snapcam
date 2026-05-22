@@ -79,7 +79,7 @@ class CameraManager(private val context: Context) {
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setVideoEncoder(MediaRecorder.VideoEncoder.H264)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setVideoFrameRate(30); setVideoSize(1280, 720); setVideoBitRate(4000000); setAudioBitRate(128000)
+                setVideoFrameRate(30); setVideoSize(1280, 720); setVideoEncodingBitRate(4000000); setAudioEncodingBitRate(128000)
                 context.contentResolver.openFileDescriptor(uri, "w")?.let { fd -> setOutputFile(fd.fileDescriptor) } ?: run { cb(CaptureResult.Error("No fd")); return }
                 prepare(); start()
             }
